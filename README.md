@@ -7,7 +7,7 @@ typedef struct link
 {
 	Mytype data;
 	struct link* next;
-}*Link;
+}*Link;                      //避免引用时过于繁琐
 Link Createlink(int n,char arr[])
 {
 	int i;
@@ -62,7 +62,7 @@ int main()
 	char arr[N];
 	char c = ' 1 ';
 	
-	scanf_s("%s", arr, N);
+	scanf_s("%s", arr, N);      //for me 目前将数字连续输入数组仍只能使用字符串数组
 	n = lengtha(arr);
 	
 	Link head = Createlink(n, arr);
