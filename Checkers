@@ -171,8 +171,6 @@ int point(int me)//再检测是否会被吃子
 				else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == WHITE && virtual_board[i - 1][j + 1] == EMPTY && (if_eat(i - 1, j + 1) == 0))
 					me_score -= 4;
 
-				if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == BLACK && virtual_board[i + 2][j] == BLACK && virtual_board[i + 1][j + 1] == BLACK && virtual_board[i][j + 2] == BLACK && virtual_board[i + 2][j + 2] == BLACK)
-					me_score += 10;
 				if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == BLACK && virtual_board[i + 2][j] == BLACK && virtual_board[i + 1][j + 1] == EMPTY && virtual_board[i][j + 2] == BLACK && virtual_board[i + 2][j + 2] == BLACK)
 					me_score -= 10;
 			}
