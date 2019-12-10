@@ -249,7 +249,7 @@ int if_eat(int x, int y)
 		return 1;
 	if (isInBound(x - 2, y - 2) && isInBound(x - 1, y - 1) && virtual_board[x - 2][y - 2] == EMPTY && virtual_board[x - 1][y - 1] == WHITE)
 		return 1;
-	if (isInBound(x + 2, y + 1) && isInBound(x + 1, y + 1) && virtual_board[x + 2][y + 2] == EMPTY && virtual_board[x + 1][y + 1] == WHITE)
+	if (isInBound(x + 2, y + 2) && isInBound(x + 1, y + 1) && virtual_board[x + 2][y + 2] == EMPTY && virtual_board[x + 1][y + 1] == WHITE)
 		return 1;
 	if (isInBound(x + 2, y - 2) && isInBound(x + 1, y - 1) && virtual_board[x + 2][y - 2] == EMPTY && virtual_board[x + 1][y - 1] == WHITE)
 		return 1;
