@@ -89,6 +89,21 @@ void place(struct Command cmd, int cur_flag)
 		}
 	}
 }
+void virtual_place(struct Command cmd, int cur_flag)
+{
+	int x_mid, y_mid;
+	for (int i = 0; i < cmd.numStep - 1; i++)
+	{
+		virtual_board[cmd.x[i]][cmd.y[i]] = EMPTY;
+		virtual_board[cmd.x[i + 1]][cmd.y[i + 1]] = cur_flag;
+		if (abs(cmd.x[i] - cmd.x[i + 1]) == 2)
+		{
+			x_mid = (cmd.x[i] + cmd.x[i + 1]) / 2;
+			y_mid = (cmd.y[i] + cmd.y[i + 1]) / 2;
+			virtual_board[x_mid][y_mid] = EMPTY;
+		}
+	}
+}
 /**
  * YOUR CODE BEGIN
  * 你的代码开始
@@ -99,89 +114,14 @@ struct SCORE { int score[13]; int times; int x[13]; int y[13]; };
 struct SCORE Score = { .score = {0},.times = 0,.x = {0},.y = {0}, };
 //struct Command cur_scor ={.x = {0},.y = {0},.numStep = 0};
 struct Command cur_step = { .x = {0},.y = {0},.numStep = 0 };
-struct Command best_step = { .x = {0},.y = {0},.numStep = 0 };
+struct Command step = { .x = {0},.y = {0},.numStep = 0 };
 struct Command cur_command = { .x = {0},.y = {0},.numStep = 0 };
+struct Command cur_command_white = { .x = {0},.y = {0},.numStep = 0 };
 struct Command jumpCmd = { .x = {0},.y = {0},.numStep = 0 };
+struct Command jumpCmd_white = { .x = {0},.y = {0},.numStep = 0 };
 struct Command longestJumpCmd = { .x = {0},.y = {0},.numStep = 1 };
+struct Command longestJumpCmd_white = { .x = {0},.y = {0},.numStep = 1 };
 
-//void search(int me)
-//{
-//	for (int x = 0; x < BOARD_SIZE; x++)
-//	{
-//		for (int y = 0; y < BOARD_SIZE; y++)
-//		{
-//			if (virtual_board[x][y] == BLACK)
-//			{
-//				if (isInBound(x - 1, y + 1) && board[x - 1][y + 1] == EMPTY)
-//					virtual_board[x][y] = move_BLACK;
-//				else if (isInBound(x - 1, y - 1) && board[x - 1][y - 1] == EMPTY)
-//					virtual_board[x][y] = move_BLACK;
-//				else if (isInBound(x - 2, y + 2) && isInBound(x - 1, y + 1) && board[x - 2][y + 2] == EMPTY && board[x - 1][y + 1] == WHITE)
-//					virtual_board[x][y] = eat_BLACK;
-//				else if (isInBound(x - 2, y - 2) && isInBound(x - 1, y - 1) && board[x - 2][y - 2] == EMPTY && board[x - 1][y - 1] == WHITE)
-//					virtual_board[x][y] = eat_BLACK;
-//				else if (isInBound(x + 2, y + 1) && isInBound(x + 1, y + 1) && board[x + 2][y + 2] == EMPTY && board[x + 1][y + 1] == WHITE)
-//					virtual_board[x][y] = eat_BLACK;
-//				else if (isInBound(x + 2, y - 2) && isInBound(x + 1, y - 1) && board[x + 2][y - 2] == EMPTY && board[x + 1][y - 1] == WHITE)
-//					virtual_board[x][y] = eat_BLACK;
-//				else if (x == 0)
-//					virtual_board[x][y] = king_BLACK;
-//			}
-//		}
-//	}
-//	return;
-//}
-/*********估值函数********/
-int point(int me)//再检测是否会被吃子
-{
-	int score = 0;
-	int me_score = 0, other_score = 0;
-	int other = 3 - me;
-	for (int i = 0; i < BOARD_SIZE; i++)
-	{
-		for (int j = 0; j < BOARD_SIZE; j++)
-		{
-			//统计己方子数与王子数
-			if (virtual_board[i][j] == BLACK )
-				me_score++;
-			else if (virtual_board[i][j] == BLACK && i == 0)
-				me_score += 10;
-			else if (virtual_board[i][j] == WHITE)
-				other_score++;
-			else if (virtual_board[i][j] == WHITE && i == 7)
-				other_score += 10;
-			if (virtual_board[i][j] == BLACK)
-			{
-				//连吃需尽可能避免，
-				if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == WHITE && virtual_board[i + 1][j + 1] == EMPTY && if_eat(i + 1, j + 1))
-					me_score -= 10;
-				else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == WHITE && virtual_board[i + 1][j - 1] == EMPTY && if_eat(i + 1, j - 1))
-					me_score -= 10;
-				else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == WHITE && virtual_board[i - 1][j - 1] == EMPTY && if_eat(i - 1, j - 1))
-					me_score -= 10;
-				else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == WHITE && virtual_board[i - 1][j + 1] == EMPTY && if_eat(i - 1, j + 1))
-					me_score -= 10;
-				//单吃
-				else if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == WHITE && virtual_board[i + 1][j + 1] == EMPTY && (if_eat(i + 1, j + 1) == 0))
-					me_score -= 4;
-				else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == WHITE && virtual_board[i + 1][j - 1] == EMPTY && (if_eat(i + 1, j - 1) == 0))
-					me_score -= 4;
-				else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == WHITE && virtual_board[i - 1][j - 1] == EMPTY && (if_eat(i - 1, j - 1) == 0))
-					me_score -= 4;
-				else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == WHITE && virtual_board[i - 1][j + 1] == EMPTY && (if_eat(i - 1, j + 1) == 0))
-					me_score -= 4;
-
-				if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == BLACK && virtual_board[i + 2][j] == BLACK && virtual_board[i + 1][j + 1] == BLACK && virtual_board[i][j + 2] == BLACK && virtual_board[i + 2][j + 2] == BLACK)
-					me_score += 10;
-				if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == BLACK && virtual_board[i + 2][j] == BLACK && virtual_board[i + 1][j + 1] == EMPTY && virtual_board[i][j + 2] == BLACK && virtual_board[i + 2][j + 2] == BLACK)
-					me_score -= 10;
-			}
-
-		}
-	}
-	score = me_score - other_score;
-	return score;
-}
 //黑白转置
 void rotateCommand(struct Command* cmd)
 {
@@ -234,11 +174,64 @@ void tryToJump(int x, int y, int currentStep)
 	}
 	jumpCmd.numStep--;
 }
+void tryToJumpWhite(int x, int y, int currentStep)
+{
+	int newX, newY, midX, midY;
+	char tmpFlag;
+	jumpCmd_white.x[currentStep] = x;
+	jumpCmd_white.y[currentStep] = y;
+	jumpCmd_white.numStep++;
+	for (int i = 0; i < 4; i++)
+	{
+		newX = x + jumpDir[i][0];
+		newY = y + jumpDir[i][1];
+		midX = (x + newX) / 2;
+		midY = (y + newY) / 2;
+		if (isInBound(newX, newY) && (virtual_board[midX][midY] == BLACK || virtual_board[midX][midY] == king_BLACK) && (virtual_board[newX][newY] == EMPTY))
+		{
+			virtual_board[newX][newY] = virtual_board[x][y];
+			virtual_board[x][y] = EMPTY;
+			tmpFlag = virtual_board[midX][midY];
+			virtual_board[midX][midY] = EMPTY;
+			tryToJumpWhite(newX, newY, currentStep + 1);
+			virtual_board[x][y] = virtual_board[newX][newY];
+			virtual_board[newX][newY] = EMPTY;
+			virtual_board[midX][midY] = tmpFlag;
+		}
+	}
+	if (jumpCmd_white.numStep >= longestJumpCmd_white.numStep)//是选择后搜到的好还是先搜到的好？待测试
+	{
+		memcpy(&longestJumpCmd_white, &jumpCmd_white, sizeof(struct Command));
+	}
+	jumpCmd_white.numStep--;
+}
+int if_king_move(int x, int y)
+{
+	if (isInBound(x - 1, y + 1) && board[x - 1][y + 1] == EMPTY)
+		return 1;
+	else if (isInBound(x - 1, y - 1) && board[x - 1][y - 1] == EMPTY)
+		return 1;
+	else if (isInBound(x + 1, y + 1) && board[x + 1][y + 1] == EMPTY)
+		return 1;
+	else if (isInBound(x + 1, y - 1) && board[x + 1][y - 1] == EMPTY)
+		return 1;
+	else
+		return 0;
+}
 int if_move(int x, int y)
 {
 	if (isInBound(x - 1, y + 1) && board[x - 1][y + 1] == EMPTY)
 		return 1;
 	else if (isInBound(x - 1, y - 1) && board[x - 1][y - 1] == EMPTY)
+		return 1;
+	else
+		return 0;
+}
+int if_moveWhite(int x, int y)
+{
+	if (isInBound(x + 1, y + 1) && board[x + 1][y + 1] == EMPTY)
+		return 1;
+	else if (isInBound(x + 1, y - 1) && board[x + 1][y - 1] == EMPTY)
 		return 1;
 	else
 		return 0;
@@ -256,26 +249,446 @@ int if_eat(int x, int y)
 	else
 		return 0;
 }
-//************************************************先写一个三层maxmin,如何初始化？什么是初始化？
-//// initai里的值如何传出来，还是直接在aiturn里写？
-//暂定初始化为 “将可动棋子活性化”
+int if_white_eat(int x, int y)
+{
+	if (isInBound(x - 2, y + 2) && isInBound(x - 1, y + 1) && virtual_board[x - 2][y + 2] == EMPTY && virtual_board[x - 1][y + 1] == BLACK)
+		return 1;
+	if (isInBound(x - 2, y - 2) && isInBound(x - 1, y - 1) && virtual_board[x - 2][y - 2] == EMPTY && virtual_board[x - 1][y - 1] == BLACK)
+		return 1;
+	if (isInBound(x + 2, y + 2) && isInBound(x + 1, y + 1) && virtual_board[x + 2][y + 2] == EMPTY && virtual_board[x + 1][y + 1] == BLACK)
+		return 1;
+	if (isInBound(x + 2, y - 2) && isInBound(x + 1, y - 1) && virtual_board[x + 2][y - 2] == EMPTY && virtual_board[x + 1][y - 1] == BLACK)
+		return 1;
+	else
+		return 0;
+}
+/*********估值函数********/
+int point(int me)//再检测是否会被吃子
+{
+	int score = 0;
+	int me_score = 0, other_score = 0;
+	int other = 3 - me;
+	if (me == BLACK)
+	{
+		for (int i = 0; i < BOARD_SIZE; i++)
+		{
+			for (int j = 0; j < BOARD_SIZE; j++)
+			{
+				//统计己方子数与王子数
+				if (virtual_board[i][j] == BLACK)
+					me_score++;
+				else if (virtual_board[i][j] == king_BLACK)
+					me_score += 30;
+				else if (virtual_board[i][j] == WHITE)
+					other_score++;
+				else if (virtual_board[i][j] == king_WHITE)
+					other_score += 30;
+				if (virtual_board[i][j] == BLACK)
+				{
+					//连吃需尽可能避免，
+					if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == WHITE && virtual_board[i + 1][j + 1] == EMPTY && if_white_eat(i + 1, j + 1))
+						me_score -= 50;
+					else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == WHITE && virtual_board[i + 1][j - 1] == EMPTY && if_white_eat(i + 1, j - 1))
+						me_score -= 50;
+					else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == WHITE && virtual_board[i - 1][j - 1] == EMPTY && if_white_eat(i - 1, j - 1))
+						me_score -= 50;
+					else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == WHITE && virtual_board[i - 1][j + 1] == EMPTY && if_white_eat(i - 1, j + 1))
+						me_score -= 50;
+					//单吃
+					else if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == WHITE && virtual_board[i + 1][j + 1] == EMPTY && (if_white_eat(i + 1, j + 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == WHITE && virtual_board[i + 1][j - 1] == EMPTY && (if_white_eat(i + 1, j - 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == WHITE && virtual_board[i - 1][j - 1] == EMPTY && (if_white_eat(i - 1, j - 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == WHITE && virtual_board[i - 1][j + 1] == EMPTY && (if_white_eat(i - 1, j + 1) == 0))
+						me_score -= 20;
+
+					if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == BLACK && virtual_board[i + 2][j] == BLACK && virtual_board[i + 1][j + 1] == EMPTY && virtual_board[i][j + 2] == BLACK && virtual_board[i + 2][j + 2] == BLACK)
+						me_score -= 10;//四子空心情况
+				}
+			}
+		}
+	}
+	else if (me == WHITE)
+	{
+		for (int i = 0; i < BOARD_SIZE; i++)
+		{
+			for (int j = 0; j < BOARD_SIZE; j++)
+			{
+				//统计己方子数与王子数
+				if (virtual_board[i][j] == WHITE)
+					me_score++;
+				else if (virtual_board[i][j] == WHITE && i == 7)
+					me_score += 30;
+				else if (virtual_board[i][j] == BLACK)
+					other_score++;
+				else if (virtual_board[i][j] == king_BLACK)
+					other_score += 30;
+				if (virtual_board[i][j] == WHITE)
+				{
+					//连吃需尽可能避免，
+					if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == BLACK && virtual_board[i + 1][j + 1] == EMPTY && if_eat(i + 1, j + 1))
+						me_score -= 50;
+					else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == BLACK && virtual_board[i + 1][j - 1] == EMPTY && if_eat(i + 1, j - 1))
+						me_score -= 50;
+					else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == BLACK && virtual_board[i - 1][j - 1] == EMPTY && if_eat(i - 1, j - 1))
+						me_score -= 50;
+					else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == BLACK && virtual_board[i - 1][j + 1] == EMPTY && if_eat(i - 1, j + 1))
+						me_score -= 50;
+					//单吃
+					else if (isInBound(i - 1, j - 1) && isInBound(i + 1, j + 1) && virtual_board[i - 1][j - 1] == BLACK && virtual_board[i + 1][j + 1] == EMPTY && (if_eat(i + 1, j + 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i - 1, j + 1) && isInBound(i + 1, j - 1) && virtual_board[i - 1][j + 1] == BLACK && virtual_board[i + 1][j - 1] == EMPTY && (if_eat(i + 1, j - 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i + 1, j + 1) && isInBound(i - 1, j - 1) && virtual_board[i + 1][j + 1] == BLACK && virtual_board[i - 1][j - 1] == EMPTY && (if_eat(i - 1, j - 1) == 0))
+						me_score -= 20;
+					else if (isInBound(i + 1, j - 1) && isInBound(i - 1, j + 1) && virtual_board[i + 1][j - 1] == BLACK && virtual_board[i - 1][j + 1] == EMPTY && (if_eat(i - 1, j + 1) == 0))
+						me_score -= 20;
+
+					if (isInBound(i + 2, j) && isInBound(i + 1, j + 1) && isInBound(i + 2, j + 2) && isInBound(i, j + 2) && virtual_board[i][j] == WHITE && virtual_board[i + 2][j] == WHITE && virtual_board[i + 1][j + 1] == EMPTY && virtual_board[i][j + 2] == WHITE && virtual_board[i + 2][j + 2] == WHITE)
+						me_score -= 10;//四子空心情况
+				}
+			}
+		}
+	}
+	score = me_score - other_score;
+	return score;
+}
+void black_aspect(int me)
+{
+	int count = 0;
+	int score_max = 0, cur_score = 0;
+	struct Command mand = {
+		.x = {0},
+		.y = {0},
+		.numStep = 0 };
+
+	int times = 0;
+	char e_board[BOARD_SIZE][BOARD_SIZE] = { 0 };
+	for (int x = 0; x < BOARD_SIZE; x++)
+	{
+		for (int y = 0; y < BOARD_SIZE; y++)
+		{
+			if (virtual_board[x][y] == BLACK || virtual_board[x][y] == king_BLACK)
+			{
+				if (if_eat(x, y))
+				{
+					tryToJump(x, y, 0);
+					count++;
+				}
+			}
+		}
+	}
+	if (count != 0)
+	{
+		virtual_place(longestJumpCmd, BLACK);
+		return;
+	}
+	else
+	{
+		for (int x = 0; x < BOARD_SIZE; x++)
+		{
+			for (int y = 0; y < BOARD_SIZE; y++)
+			{
+				if (if_move(x, y) && virtual_board[x][y] == BLACK)
+				{
+					if (isInBound(x - 1, y + 1) && virtual_board[x - 1][y + 1] == EMPTY)
+					{
+						set(x, y, x - 1, y + 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x - 1, step.y[1] = y + 1;
+						if (times == 0)
+						{
+							score_max = point(me);
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (point(me) > score_max)
+						{
+							score_max = point(me);
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x - 1, y + 1, x, y);
+					}
+					if (isInBound(x - 1, y - 1) && virtual_board[x - 1][y - 1] == EMPTY)
+					{
+						set(x, y, x - 1, y - 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x - 1, step.y[1] = y - 1;
+						int unm = point(me);
+						if (times == 0)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (unm > score_max)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x - 1, y - 1, x, y);
+					}
+				}
+				else if (virtual_board[x][y] == king_BLACK)
+				{
+					if (isInBound(x - 1, y + 1) && virtual_board[x - 1][y + 1] == EMPTY)
+					{
+						set(x, y, x - 1, y + 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x - 1, step.y[1] = y + 1;
+						int unm = point(me);
+						if (times == 0)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (unm > score_max)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x - 1, y + 1, x, y);
+					}
+					if (isInBound(x - 1, y - 1) && virtual_board[x - 1][y - 1] == EMPTY)
+					{
+						set(x, y, x - 1, y - 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x - 1, step.y[1] = y - 1;
+						int unm = point(me);
+						if (times == 0)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (unm > score_max)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x - 1, y - 1, x, y);
+					}
+
+					if (isInBound(x + 1, y + 1) && virtual_board[x + 1][y + 1] == EMPTY)
+					{
+						set(x, y, x + 1, y + 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x + 1, step.y[1] = y + 1;
+						int unm = point(me);
+						if (times == 0)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (unm > score_max)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x + 1, y + 1, x, y);
+					}
+					if (isInBound(x + 1, y - 1) && virtual_board[x + 1][y - 1] == EMPTY)
+					{
+						set(x, y, x + 1, y - 1);
+						step.numStep = 2, step.x[0] = x, step.y[0] = y;
+						step.x[1] = x + 1, step.y[1] = y - 1;
+						int unm = point(me);
+						if (times == 0)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						else if (unm > score_max)
+						{
+							score_max = unm;
+							memcpy(&mand, &step, sizeof(struct Command));
+						}
+						times++;
+						set(x + 1, y - 1, x, y);
+					}
+				}
+			}
+		}
+		virtual_place(mand, BLACK);
+		return;
+	}
+}
+void white_aspect()
+{
+	int eat = 0;
+	int max = 0, cur = 0;
+	int frequency = 0;
+	struct Command com = {
+		.x = {0},
+		.y = {0},
+		.numStep = 0 };
+	char re_board[BOARD_SIZE][BOARD_SIZE] = { 0 };
+	int times = 0, circle = 0;
+	for (int x = 0; x < BOARD_SIZE; x++)
+	{
+		for (int y = 0; y < BOARD_SIZE; y++)
+		{
+			if (virtual_board[x][y] == WHITE || virtual_board[x][y] == king_WHITE)
+			{
+				if (if_white_eat(x, y))
+				{
+					tryToJumpWhite(x, y, 0);
+					eat++;
+				}
+			}
+		}
+	}
+	if (eat != 0)
+	{
+		virtual_place(longestJumpCmd_white, WHITE);
+		black_aspect(BLACK);
+		return;
+	}
+	else
+	{
+		for (int x = 0; x < BOARD_SIZE; x++)
+		{
+			for (int y = 0; y < BOARD_SIZE; y++)
+			{
+				if (if_move(x, y) && virtual_board[x][y] == WHITE)
+				{
+					if (isInBound(x + 1, y + 1) && virtual_board[x + 1][y + 1] == EMPTY)
+					{
+						set(x, y, x + 1, y + 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x + 1, cur_command_white.y[1] = y + 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x+1, y+1, x , y );
+					}
+					else if (isInBound(x + 1, y - 1) && virtual_board[x + 1][y - 1] == EMPTY)
+					{
+						set(x, y, x + 1, y - 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x + 1, cur_command_white.y[1] = y - 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x + 1, y - 1, x, y);
+					}
+				}
+				else if (if_king_move(x, y) && virtual_board[x][y] == king_WHITE)
+				{
+					if (isInBound(x + 1, y + 1) && virtual_board[x + 1][y + 1] == EMPTY)
+					{
+						set(x, y, x + 1, y + 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x + 1, cur_command_white.y[1] = y + 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x + 1, y + 1, x, y);
+					}
+					else if (isInBound(x + 1, y - 1) && virtual_board[x + 1][y - 1] == EMPTY)
+					{
+						set(x, y, x + 1, y - 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x + 1, cur_command_white.y[1] = y - 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x + 1, y - 1, x, y);
+					}
+					else if (isInBound(x - 1, y + 1) && virtual_board[x - 1][y + 1] == EMPTY)
+					{
+						set(x, y, x - 1, y + 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x - 1, cur_command_white.y[1] = y + 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x - 1, y + 1, x, y);
+					}
+					else if (isInBound(x - 1, y - 1) && virtual_board[x - 1][y - 1] == EMPTY)
+					{
+						set(x, y, x - 1, y - 1);
+						cur_command_white.numStep = 2, cur_command_white.x[0] = x, cur_command_white.y[0] = y;
+						cur_command_white.x[1] = x - 1, cur_command_white.y[1] = y - 1;
+						int quan = point(WHITE);
+						if (frequency == 0)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						else if (quan > max)
+						{
+							max = quan;
+							memcpy(&com, &cur_command_white, sizeof(struct Command));
+						}
+						frequency++;
+						set(x - 1, y - 1, x, y);
+					}
+				}
+			}
+		}
+		virtual_place(com,WHITE);
+		black_aspect(BLACK);
+		return;
+	}
+
+}
 void initAI(int me)
 {
 
 	return;
 }
-/**
- * 轮到你落子。
- * 棋盘上0表示空白，1表示黑棋，2表示白旗
- * me表示你所代表的棋子(1或2)
- * 你需要返回一个结构体Command，其中numStep是你要移动的棋子经过的格子数（含起点、终点），
- * x、y分别是该棋子依次经过的每个格子的横、纵坐标
- */
-struct Command aiTurn(const char board[BOARD_SIZE][BOARD_SIZE],int me)
+struct Command aiTurn(const char board[BOARD_SIZE][BOARD_SIZE], int me)
 {
-	//if (num <= 2 && me == BLACK)
-	//return firstTwo(me);//前三板固定套路，尽量节省时间
-
 	int eat_count = 0;
 	int score_max = 0, cur_score = 0;
 	struct Command command = {
@@ -284,32 +697,48 @@ struct Command aiTurn(const char board[BOARD_SIZE][BOARD_SIZE],int me)
 		.numStep = 0 };
 
 	int times = 0;
+
 	for (int x = 0; x < BOARD_SIZE; x++)
 	{
 		for (int y = 0; y < BOARD_SIZE; y++)
 		{
-			if (board[x][y] == BLACK)
+			if (board[x][y] == BLACK || board[x][y] == king_BLACK)
 			{
 				if (if_eat(x, y))
 				{
 					tryToJump(x, y, 0);
 					eat_count++;
 				}
-				else if (if_move(x, y) && eat_count == 0)
+			}
+		}
+	}
+	if (eat_count != 0)
+	{
+		return longestJumpCmd;
+	}
+	else
+	{
+		for (int x = 0; x < BOARD_SIZE; x++)
+		{
+			for (int y = 0; y < BOARD_SIZE; y++)
+			{
+				if (if_move(x, y) && virtual_board[x][y] == BLACK)
 				{
 					if (isInBound(x - 1, y + 1) && virtual_board[x - 1][y + 1] == EMPTY)
 					{
 						set(x, y, x - 1, y + 1);
 						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
 						cur_step.x[1] = x - 1, cur_step.y[1] = y + 1;
+						white_aspect();
+						int qua = point(me);
 						if (times == 0)
 						{
-							score_max = point(me);
+							score_max = qua;
 							memcpy(&command, &cur_step, sizeof(struct Command));
 						}
-						else if (point(me) > score_max)
+						else if (qua > score_max)
 						{
-							score_max = point(me);
+							score_max = qua;
 							memcpy(&command, &cur_step, sizeof(struct Command));
 						}
 						times++;
@@ -320,14 +749,101 @@ struct Command aiTurn(const char board[BOARD_SIZE][BOARD_SIZE],int me)
 						set(x, y, x - 1, y - 1);
 						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
 						cur_step.x[1] = x - 1, cur_step.y[1] = y - 1;
+						white_aspect();
+						int qua = point(me);
 						if (times == 0)
 						{
-							score_max = point(me);
+							score_max = qua;
 							memcpy(&command, &cur_step, sizeof(struct Command));
 						}
-						else if (point(me) > score_max)
+						else if (qua > score_max)
 						{
-							score_max = point(me);
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						times++;
+						memcpy(virtual_board, board, sizeof(virtual_board));
+					}
+				}
+				else if (virtual_board[x][y] == king_BLACK)
+				{
+					if (isInBound(x - 1, y + 1) && virtual_board[x - 1][y + 1] == EMPTY)
+					{
+						set(x, y, x - 1, y + 1);
+						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
+						cur_step.x[1] = x - 1, cur_step.y[1] = y + 1;
+						for(int cir = 0;cir < 2;cir++)
+							white_aspect();
+						int qua = point(me);
+						if (times == 0)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						else if (qua > score_max)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						times++;
+						memcpy(virtual_board, board, sizeof(virtual_board));
+					}
+					if (isInBound(x - 1, y - 1) && virtual_board[x - 1][y - 1] == EMPTY)
+					{
+						set(x, y, x - 1, y - 1);
+						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
+						cur_step.x[1] = x - 1, cur_step.y[1] = y - 1;
+						white_aspect();
+						int qua = point(me);
+						if (times == 0)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						else if (qua > score_max)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						times++;
+						memcpy(virtual_board, board, sizeof(virtual_board));
+					}
+
+					if (isInBound(x + 1, y + 1) && virtual_board[x + 1][y + 1] == EMPTY)
+					{
+						set(x, y, x + 1, y + 1);
+						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
+						cur_step.x[1] = x + 1, cur_step.y[1] = y + 1;
+						white_aspect();
+						int qua = point(me);
+						if (times == 0)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						else if (qua > score_max)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						times++;
+						memcpy(virtual_board, board, sizeof(virtual_board));
+					}
+					if (isInBound(x + 1, y - 1) && virtual_board[x + 1][y - 1] == EMPTY)
+					{
+						set(x, y, x + 1, y - 1);
+						cur_step.numStep = 2, cur_step.x[0] = x, cur_step.y[0] = y;
+						cur_step.x[1] = x + 1, cur_step.y[1] = y - 1;
+						white_aspect();
+						int qua = point(me);
+						if (times == 0)
+						{
+							score_max = qua;
+							memcpy(&command, &cur_step, sizeof(struct Command));
+						}
+						else if (qua > score_max)
+						{
+							score_max = qua;
 							memcpy(&command, &cur_step, sizeof(struct Command));
 						}
 						times++;
@@ -336,27 +852,11 @@ struct Command aiTurn(const char board[BOARD_SIZE][BOARD_SIZE],int me)
 				}
 			}
 		}
-	}
-	if (eat_count != 0)
-	{
-		return longestJumpCmd;
-	}
-	else
 		return command;
+	}
 }
-
-/**
- * 你的代码结束
- */
-
- //.X.X.X.X
- //X.X.X.X.
- //.X.X.X.X
- //........
- //........
- //O.O.O.O.
- //.O.O.O.O
- //O.O.O.O.
+/***********************************************************************************************/
+ 
 void start(int flag)
 {
 	memset(board, 0, sizeof(board));
@@ -379,7 +879,14 @@ void start(int flag)
 void turn()
 {
 	// AI
-	struct Command command = aiTurn((const char(*)[BOARD_SIZE])board, me_flag);
+	for (int k = 0; k < BOARD_SIZE; k++)
+	{
+		if (board[0][k] == BLACK)
+			board[0][k] = king_BLACK,virtual_board[0][k] = king_BLACK;
+		if (board[7][k] == WHITE)
+			board[7][k] = king_WHITE,virtual_board[7][k] = king_WHITE;
+	}
+	struct Command command = aiTurn((const char(*)[BOARD_SIZE])board, BLACK);
 	if (me_flag == BLACK)
 	{
 		place(command, me_flag);
@@ -388,9 +895,6 @@ void turn()
 	{
 		place(command, other_flag);
 	}
-	for (int k = 0; k < BOARD_SIZE; k++)
-		if (board[0][k] == BLACK)
-			board[0][k] = king_BLACK;
 	memcpy(virtual_board, board, sizeof(board));
 	if (me_flag == BLACK)
 	{
